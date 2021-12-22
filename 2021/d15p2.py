@@ -19,8 +19,6 @@ def solve(inp):
                 newrow += [ (x - 1 + i + j) % 9 + 1 for x in row ]
             newarr.append(newrow)
     arr = newarr
-    for row in arr:
-        print(''.join([str(x) for x in row]))
 
     rows = len(arr)
     cols = len(arr[0])
@@ -36,7 +34,22 @@ def solve(inp):
             if col > 0:
                 above_or_left.append(costs[row][col-1]+arr[row][col])
             costs[row][col] = min(above_or_left or [0])
-    print(costs[rows-1][cols-1])
+    print("best", costs[rows-1][cols-1])
+
+    change = True
+    while change:
+        change = False
+        for row in range(rows):
+            for col in range(cols):
+                around = []
+                for nr, nc in [ (row-1, col), (row+1, col), (row, col-1), (row, col+1) ]:
+                    if (0 <= nr) and (nr < rows) and (0 <= nc) and (nc < cols):
+                        around.append(costs[nr][nc]+arr[row][col])
+                lowest = min(around)
+                if lowest < costs[row][col]:
+                    change = True
+                    costs[row][col] = lowest
+        print("best", costs[rows-1][cols-1])        
 
 def best(row, col, rows, cols, arr):
     if row == rows-1 and col == cols-1:
