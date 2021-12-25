@@ -21,34 +21,41 @@ def solve(inp):
             input_indexes.append(inst_idx)
 
     digit_insts_ranges = zip(input_indexes, input_indexes[1:] + [len(insts)])
-
     insts_by_digit = tuple([ tuple(insts[start:fin]) for start, fin in digit_insts_ranges ])
-    print(find_digits(insts_by_digit))
+    assert(all([len(digit_insts) == 18 for digit_insts in insts_by_digit]))
+
+    fixed = [] # for testing
+    start_z = run(insts[:input_indexes[len(fixed)]], fixed)['z']
+    print(find_digits(insts_by_digit, set(), pos=len(fixed), start_z=start_z))
 
 
-# Returns the highest set of digits where run(insts_by_digit[-1])['z'] == target_z
-@functools.cache
-def find_digits(insts_by_digit, target_z=0):
-    print(f"find_digits({len(insts_by_digit)}, {target_z})", flush=True)
-    digits_left = len(insts_by_digit)
-    digit_insts = insts_by_digit[-1]
-    for try_w in range(9, 0, -1):
-        for try_z in (range(0, 626) if len(insts_by_digit) > 1 else [0]):
-            regs = run(digit_insts, [try_w], regs = {'z': try_z, 'w': 0, 'x': 0, 'y': 0})
-            if regs['z'] != target_z:
+def find_digits(insts_by_digit, visited, pos, start_z):
+    token = (pos, start_z)
+    if token in visited:
+        # We don't need to record anything but failures, success is immediate.
+        return None
+    visited.add(token)
+
+    if pos < 3:
+        print(f"find_digits({pos}, {start_z})", flush=True)
+    digit_insts = insts_by_digit[pos]
+    last_digit = pos == len(insts_by_digit)-1
+    # for try_w in reversed(range(1, 10)):
+    for try_w in range(1, 10):
+        end_z = run(digit_insts, [try_w], regs = {'z': start_z, 'w': 0, 'x': 0, 'y': 0})['z']
+        # print(pos, start_z, "+ digit", try_w, " => ", end_z)
+
+        if last_digit:
+            if end_z == 0:
+                return (try_w,)
+            else:
                 continue
 
-            if digits_left == 1:
-                return [try_w]
-
-            # At this point we know that if we start with w=try_w /
-            # z=try_z we should get to z=0, so let's see what starting
-            # digits will get us there.
-            starting_digits = find_digits(insts_by_digit[:-1], try_z)
-            if not starting_digits:
-                # can't find one?
-                continue
-            return starting_digits + [try_w]
+        found = find_digits(insts_by_digit, visited, pos+1, end_z)
+        if found:
+            digits = tuple([try_w] + list(found))
+            print(f"find_digits({pos}, {start_z}) => {digits}", flush=True)
+            return digits
 
     return None
 
