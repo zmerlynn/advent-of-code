@@ -22,22 +22,25 @@ def solve(inp):
 
     digit_insts_ranges = zip(input_indexes, input_indexes[1:] + [len(insts)])
 
-    insts_by_digit = tuple([ tuple(insts[start+1:fin]) for start, fin in digit_insts_ranges ])
-
+    insts_by_digit = tuple([ tuple(insts[start:fin]) for start, fin in digit_insts_ranges ])
     print(find_digits(insts_by_digit))
+
 
 # Returns the highest set of digits where run(insts_by_digit[-1])['z'] == target_z
 @functools.cache
 def find_digits(insts_by_digit, target_z=0):
     print(f"find_digits({len(insts_by_digit)}, {target_z})", flush=True)
+    digits_left = len(insts_by_digit)
     digit_insts = insts_by_digit[-1]
     for try_w in range(9, 0, -1):
-        for try_z in (range(0, 10000) if len(insts_by_digit) > 1 else [0]):
-            regs = run(digit_insts, [], regs = {'z': try_z, 'w': try_w, 'x': 0, 'y': 0})
+        for try_z in (range(0, 626) if len(insts_by_digit) > 1 else [0]):
+            regs = run(digit_insts, [try_w], regs = {'z': try_z, 'w': 0, 'x': 0, 'y': 0})
             if regs['z'] != target_z:
                 continue
 
-            # print(try_w, try_z)
+            if digits_left == 1:
+                return [try_w]
+
             # At this point we know that if we start with w=try_w /
             # z=try_z we should get to z=0, so let's see what starting
             # digits will get us there.
@@ -45,7 +48,7 @@ def find_digits(insts_by_digit, target_z=0):
             if not starting_digits:
                 # can't find one?
                 continue
-            return tuple(list(starting_digits) + try_w)
+            return starting_digits + [try_w]
 
     return None
 
@@ -55,7 +58,6 @@ def run(insts, inputs, regs=None):
     register_or_scalar = lambda s: regs[s] if s in REGISTERS else int(s)
     for inst in insts:
         store_reg = inst[1]
-        regs[store_reg] = regs[store_reg]
         if inst[0] == "inp":
             regs[store_reg] = int(inputs.pop(0))
         elif inst[0] == "add":
