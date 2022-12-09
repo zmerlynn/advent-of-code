@@ -32,7 +32,11 @@ def solve(inp):
         else:
             sz, nm = l.split(' ')
             cwd[KIDS][nm] = (int(sz), )
-    print(sumTree(root))
+    total, _ = sumTree(root)
+    need = total + 30000000 - 70000000
+    print(f"need = {need}")
+    _, minatleast = sumTree(root, need)
+    print(f"least = {minatleast}")
 
 def printTree(cwd, indent=0):
     for name, meta in cwd[KIDS].items():
@@ -46,21 +50,21 @@ def printTree(cwd, indent=0):
         if len(meta) == 2:
             printTree(meta, indent=indent+2)
 
-def sumTree(cwd):
-    totalsum = 0
-    smallsum = 0
+def sumTree(cwd, atleast=0):
+    total = 0
+    minatleast = 70000000
     for name, meta in cwd[KIDS].items():
         if name == '..':
             continue
-        totalsum += meta[SIZE]
+        total += meta[SIZE]
         if len(meta) == 2:
-            (subtotalsum, subsmallsum) = sumTree(meta)
-            totalsum += subtotalsum
-            smallsum += subsmallsum
-    if totalsum < 100000:
-        print(totalsum)
-        smallsum += totalsum
-    return (totalsum, smallsum)
+            (subtotal, subminatleast) = sumTree(meta, atleast)
+            total += subtotal
+            minatleast = min(minatleast, subminatleast)
+    if total >= atleast and total < minatleast:
+        # print(total)
+        minatleast = total
+    return (total, minatleast)
 
 def tests():
     print("--- tests done ----")
