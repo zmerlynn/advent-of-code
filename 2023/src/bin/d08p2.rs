@@ -1,10 +1,10 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
 // #![allow(unused_imports)]
 
 use aoc::*;
 use itertools::Itertools;
-// use std::str;
+use num::integer::lcm;
 use std::collections::HashMap;
 
 fn run(input: String) -> String {
@@ -17,8 +17,16 @@ fn run(input: String) -> String {
     for l in line_iter {
         let (source, dests) = l.split(" = ").collect_tuple().unwrap();
         let (left_with, right_with) = dests.split(", ").collect_tuple().unwrap();
-        let left = left_with.split("(").collect_tuple::<(&str, &str)>().unwrap().1;
-        let right = right_with.split(")").collect_tuple::<(&str, &str)>().unwrap().0;
+        let left = left_with
+            .split("(")
+            .collect_tuple::<(&str, &str)>()
+            .unwrap()
+            .1;
+        let right = right_with
+            .split(")")
+            .collect_tuple::<(&str, &str)>()
+            .unwrap()
+            .0;
 
         tree.insert(source, (left, right));
         if source.ends_with("A") {
@@ -42,7 +50,7 @@ fn run(input: String) -> String {
         }
         for i in 0..locs.len() {
             if cycles[i] > 0 {
-                continue
+                continue;
             }
             if let Some(seen_before) = seen[i].get(locs[i]) {
                 cycles[i] = steps - seen_before;
@@ -51,14 +59,21 @@ fn run(input: String) -> String {
             }
         }
         if steps % 1000 == 0 {
-            println!("cycles: {:?} locs: {:?}, start_locs: {:?}", cycles, locs, seen);
+            println!(
+                "cycles: {:?} locs: {:?}, start_locs: {:?}",
+                cycles, locs, seen
+            );
         }
         if cycles.iter().all(|len| *len > 0) {
             break;
         }
     }
     println!("{:?}", cycles);
-    format!("{}", 0)
+    let mut i: i128 = 1;
+    for cycle in cycles {
+        i = lcm(i, cycle as i128);
+    }
+    format!("{}", i)
 }
 
 fn main() {
