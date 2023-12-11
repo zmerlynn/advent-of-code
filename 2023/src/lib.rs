@@ -27,3 +27,7 @@ pub fn real_input() -> String {
 pub fn test_input() -> String {
     day_input("-test.txt".to_string())
 }
+
+pub fn parse_ints(inp: &str) -> Vec<i64> {
+    inp.split_whitespace().map(|s| s.trim().parse::<i64>().unwrap()).collect()
+}
