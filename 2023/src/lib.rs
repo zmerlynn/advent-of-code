@@ -31,3 +31,7 @@ pub fn test_input() -> String {
 pub fn parse_ints(inp: &str) -> Vec<i64> {
     inp.split_whitespace().map(|s| s.trim().parse::<i64>().unwrap()).collect()
 }
+
+pub fn parse_ints_generic(inp: &str, p: &str) -> Vec<i64> {
+    inp.split(p).map(|s| s.trim().parse::<i64>().unwrap()).collect()
+}
