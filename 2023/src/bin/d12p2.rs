@@ -2,56 +2,49 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
+use std::collections::HashMap;
+
 use aoc::*;
 use itertools::Itertools;
 // use std::str;
 // use std::collections::{HashMap, HashSet};
 
-fn viable(row: &[u8], runs: &Vec<i64>) -> (bool, bool) {
-    let mut run_idx = 0;
-    let mut run = 0;
-    for c in row.iter() {
-        if *c == b'#' {
-            run += 1;
-            if run_idx >= runs.len() || run > runs[run_idx] {
-                return (false, false);
-            }
-        } else if *c == b'.' {
-            if run > 0 {
-                if run != runs[run_idx] {
-                    return (false, false)
-                }
-                run_idx += 1;
-            }
-            run = 0;
-        } else {
-            assert_eq!(*c, b'?');
-            return (true, run_idx < runs.len()-1 || runs[runs.len()-1] - run > 0);
-        }
-    }
-    (run_idx == runs.len(), false)
+fn check_match(pattern: &str, guess: &str) -> bool {
+    assert_eq!(pattern.len(), guess.len());
+    // println!("{} vs {}", pattern, guess);
+    pattern.chars().zip(guess.chars()).all(|(c_p, c_g)| (c_p == '?' || c_p == c_g))
 }
 
-fn arrangements(row: &mut [u8], unknowns: &[usize], runs: &Vec<i64>) -> i32 {
-    let (is_viable, place_more) = viable(row, runs);
-    if !is_viable {
-        // println!("- {} {:?}", std::str::from_utf8(row).unwrap(), runs);
-        return 0;
+// .??..??...?##. => len 14 => [a,1,b,1,c,3,*]
+// 
+fn arrangements<'a>(mut cache: &mut HashMap<(&'a str, &'a[i64]), i64>, row: &'a str, runs: &'a[i64]) -> i64 {
+    if let Some(x) = cache.get(&(&row, runs)) {
+        return *x;
     }
-    if unknowns.len() == 0 {
-        // println!("+ {} {:?}", std::str::from_utf8(row).unwrap(), runs);
-        return 1;
+    if runs.len() == 0 {
+        if row.contains("#") {
+            return 0;
+        } else {
+            return 1;
+        }
     }
-    let idx = unknowns[0];
-    let mut tot = 0;
-    if place_more {
-        row[idx] = b'#';
-        tot += arrangements(row, &unknowns[1..], runs);
+    // For each layer, pick a dot_length to precede runs[0]. Then we'll see
+    // if what's in the row pattern could possibly match before iterating.
+    let runs_total: i64 = runs.iter().sum();
+    let max_space = 1 + row.len() as i64 - (runs_total + runs.len() as i64);
+    let mut total_arrangements = 0;
+    for space_length in 1..max_space {
+        // here we check for a variable number of spaces, the run length in blocks, then a space
+        // we present all of that to check_match to make sure we end with a space, but when
+        // we recurse we take the ending space back off
+        let row_start = std::iter::repeat(".").take(space_length as usize).collect::<String>()
+         + &std::iter::repeat("#").take(runs[0] as usize).collect::<String>() + ".";
+        if check_match(&row[0..row_start.len()], &row_start) {
+            total_arrangements += arrangements(&mut cache, &row[row_start.len()-1..], &runs[1..])
+        }
     }
-    row[idx] = b'.';
-    tot += arrangements(row, &unknowns[1..], runs);
-    row[idx] = b'?';
-    tot
+    cache.insert((row, runs), total_arrangements);
+    total_arrangements
 }
 
 fn run(input: String) -> String {
@@ -63,18 +56,9 @@ fn run(input: String) -> String {
         for i in 0..5 {
             runs.extend(runs_initial.iter());
         }
-        let mut row = row.to_owned() + "?" + row + "?" + row + "?" + row + "?" + row + ".";
-        let mut unknowns = Vec::new();
-        for (i, c) in row.chars().enumerate() {
-            if c == '?' {
-                unknowns.push(i);
-            }
-        }
-        println!("=== {} ; {:?} ; {}", row, runs, unknowns.len());
-        unsafe {
-            let mut row = row.as_bytes_mut();
-            out += arrangements(&mut row, &unknowns, &runs);
-        }
+        let row = ".".to_string() + row + "?" + row + "?" + row + "?" + row + "?" + row + ".";
+        let mut cache: HashMap<(&str, &[i64]), i64> = HashMap::new();
+        out += arrangements(&mut cache, &row, &runs);
     }
 
     format!("{}", out)
@@ -94,5 +78,16 @@ mod tests {
     fn test_input_works() {
         let result = run(test_input());
         assert_eq!(result.trim(), TEST_RESULT);
+    }
+
+    #[test]
+    fn part1_works() {
+        let mut cache: HashMap<(&str, &[i64]), i64> = HashMap::new();
+        let runs: Vec<i64> = vec![1,1,3];
+        assert_eq!(arrangements(&mut cache, ".??..??...?##.", &runs), 4);
+        let runs: Vec<i64> = vec![1,3,1,6];
+        assert_eq!(arrangements(&mut cache, ".?#?#?#?#?#?#?#?.", &runs), 1);
+        let runs: Vec<i64> = vec![3,2,1];
+        assert_eq!(arrangements(&mut cache, ".?###????????.", &runs), 10);
     }
 }
