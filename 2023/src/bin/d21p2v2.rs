@@ -66,6 +66,7 @@ fn run(input: String) -> String {
                     new_edge.insert(new_pt.clone());
                     visited[i % 2].insert(new_pt);
                 }
+                if new_pt.
             }
         }
         if i % 1000 == 0 {
