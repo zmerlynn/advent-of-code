@@ -11,6 +11,7 @@ itertools = "0.12.0"
 maplit = "1.0.2"
 multimap = "0.9.1"
 ndarray = "0.15.6"
+ndarray-linalg = { version = "0.16.0", features = ["openblas-static"] }
 num = "0.4.1"
 rangemap = "1.4.0"
 regex = "1.10.2"
