@@ -7,18 +7,31 @@
 use aoc::*;
 use itertools::Itertools;
 use maplit::hashmap;
-use std::{iter::Zip, collections::VecDeque};
-use tuple::*;
-use std::{fmt::{Display, Formatter, Result}, collections::{HashMap, HashSet}, cmp::{min,max}, str};
-use ndarray::*;
 use multimap::MultiMap;
+use ndarray::*;
 use regex::Regex;
+use std::{
+    cmp::{max, min},
+    collections::{HashMap, HashSet},
+    fmt::{Display, Formatter, Result},
+    str,
+};
+use std::{collections::VecDeque, iter::Zip};
+use tuple::*;
 
 #[derive(Debug)]
 enum Module {
-    FlipFlop{to: Vec<String>, state: bool},
-    Conjunction{to: Vec<String>, state: HashMap<String, bool>},
-    Broadcast{to: Vec<String>},
+    FlipFlop {
+        to: Vec<String>,
+        state: bool,
+    },
+    Conjunction {
+        to: Vec<String>,
+        state: HashMap<String, bool>,
+    },
+    Broadcast {
+        to: Vec<String>,
+    },
 }
 
 #[derive(Debug)]
@@ -34,7 +47,10 @@ fn run(input: String) -> String {
     let mut module_map = HashMap::new();
     for l in input.lines() {
         let spec_match = spec_re.captures(l).unwrap();
-        let to_modules = spec_match[2].split(", ").map(|s| s.to_owned()).collect_vec();
+        let to_modules = spec_match[2]
+            .split(", ")
+            .map(|s| s.to_owned())
+            .collect_vec();
         let decl = &spec_match[1];
 
         // println!("{}, {:?}", &spec_match[1], to_modules);
@@ -43,9 +59,21 @@ fn run(input: String) -> String {
             if decl == "broadcaster" {
                 (decl.to_owned(), Module::Broadcast { to: to_modules })
             } else if decl.starts_with("%") {
-                (decl.trim_start_matches("%").to_owned(), Module::FlipFlop { to: to_modules, state: false })
+                (
+                    decl.trim_start_matches("%").to_owned(),
+                    Module::FlipFlop {
+                        to: to_modules,
+                        state: false,
+                    },
+                )
             } else if decl.starts_with("&") {
-                (decl.trim_start_matches("&").to_owned(), Module::Conjunction { to: to_modules, state: HashMap::new() })
+                (
+                    decl.trim_start_matches("&").to_owned(),
+                    Module::Conjunction {
+                        to: to_modules,
+                        state: HashMap::new(),
+                    },
+                )
             } else {
                 panic!("unknown spec {}", decl)
             }
@@ -69,11 +97,11 @@ fn run(input: String) -> String {
     }
 
     for (name, module) in &mut module_map {
-        if let Module::Conjunction { state, ..} = module {
+        if let Module::Conjunction { state, .. } = module {
             for input in input_map.get_vec(name).unwrap() {
                 state.insert(input.to_owned(), false);
             }
-        } 
+        }
     }
 
     let mut care_about = hashmap! {
@@ -87,12 +115,20 @@ fn run(input: String) -> String {
             println!("step {}M care_about={:?}", i / 1000000, care_about);
         }
         let mut pulses = VecDeque::new();
-        pulses.push_back(Pulse{from: "button".to_owned(), to: "broadcaster".to_owned(), high: false});
+        pulses.push_back(Pulse {
+            from: "button".to_owned(),
+            to: "broadcaster".to_owned(),
+            high: false,
+        });
 
         while let Some(p) = pulses.pop_front() {
             let mut send_to = |to: &Vec<String>, high: bool| {
                 for to in to {
-                    pulses.push_back(Pulse{from: p.to.to_owned(), to: to.to_owned(), high})
+                    pulses.push_back(Pulse {
+                        from: p.to.to_owned(),
+                        to: to.to_owned(),
+                        high,
+                    })
                 }
             };
 
@@ -108,17 +144,18 @@ fn run(input: String) -> String {
                         }
                     }
                     Module::Conjunction { to, state } => {
-                        state.insert(p.from, p.high);
+                        state.insert(p.from.to_owned(), p.high);
                         send_to(to, !state.iter().all(|(_, v)| *v));
-                    }
-                }
-            } else if p.high {
-                if let Some(mut presses) = care_about.get_mut(p.to.as_str()) {
-                    *presses = min(*presses, i);
 
-                    if care_about.iter().all(|(_, presses)| *presses < i64::MAX) {
-                        println!("{:?}", care_about);
-                        return format!("")
+                        if p.high && p.to == "th" {
+                            let mut presses = care_about.get_mut(p.from.as_str()).unwrap();
+                            *presses = min(*presses, i);
+
+                            if care_about.iter().all(|(_, presses)| *presses < i64::MAX) {
+                                println!("{:?}", care_about);
+                                return format!("");
+                            }
+                        }
                     }
                 }
             }
